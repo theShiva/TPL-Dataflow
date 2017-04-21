@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
 namespace Palindromes.ConsoleApp
@@ -46,7 +41,6 @@ namespace Palindromes.ConsoleApp
 
             // Process "The Adventurous Life of a Versatile Artist: Houdini" by by Harry Houdini.
             downloadString.Post("http://www.gutenberg.org/cache/epub/45370/pg45370.txt");
-
             downloadString.Complete();
 
             Console.WriteLine("Press a key to exit:");
