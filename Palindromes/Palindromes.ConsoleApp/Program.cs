@@ -144,9 +144,11 @@ namespace Palindromes.ConsoleApp
         else printPalindromes.Complete();
       });
 
-      // Process "The Adventurous Life of a Versatile Artist: Houdini" 
-      //         by Harry Houdini.
-      downloadString.Post("http://www.gutenberg.org/files/6130/6130-0.txt");
+      // Process "Adventures of Huckleberry Finn" 
+      //         by Mark Twain
+      Console.WriteLine("STEP 0 - Processing Mark Twain's Book - Adventures of Huckleberry Finn");
+
+      downloadString.Post("http://www.gutenberg.org/files/76/76-0.txt");
 
       // Mark the head of the pipeline as complete. The continuation tasks 
       // propagate completion through the pipeline as each part of the 
@@ -156,7 +158,7 @@ namespace Palindromes.ConsoleApp
       // Wait for the last block in the pipeline to process all messages.
       printPalindromes.Completion.Wait();
 
-      Console.WriteLine("Press a key to exit:");
+      Console.WriteLine("Done!\nPress a key to exit:");
       Console.ReadKey();
     }
   }
