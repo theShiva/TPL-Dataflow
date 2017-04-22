@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
 namespace Palindromes.ConsoleApp
@@ -77,8 +79,40 @@ namespace Palindromes.ConsoleApp
          }
         );
 
+      // Step 4 - Find Palindromes.
+      var findPalindromeWords = new TransformManyBlock<List<string>, string>
+        ( wordsList =>
+          {
+            Console.WriteLine("STEP 4 - Finding Palindrome words...");
+
+            // Holds palindrome words.
+            var palindromeWords = new ConcurrentQueue<string>();
+
+            // Add each word in the original collection to the result whose 
+            // reversed word also exists in the collection.
+            Parallel.ForEach(wordsList, word =>
+            {
+            // Reverse the word.
+            string reverse = new string(word.Reverse().ToArray());
+
+            // Enqueue the word if the reversed version also exists
+            // in the collection.
+            if (word == reverse)
+                palindromeWords.Enqueue(word);
+            });
+
+            var searchMessage = palindromeWords.Any() ? $"STEP 4 - Found {palindromeWords.Count} palindrome(s)" : $"STEP 4 - Didn't find any palindromes :(";
+            Console.WriteLine(searchMessage);
+
+            return palindromeWords;
+
+          });
+
+
+
       downloadString.LinkTo(createWordList);
       createWordList.LinkTo(filterWordList);
+      filterWordList.LinkTo(findPalindromeWords);
 
       downloadString.Completion.ContinueWith(t =>
       {
@@ -90,17 +124,22 @@ namespace Palindromes.ConsoleApp
       {
         if (t.IsFaulted) ((IDataflowBlock)filterWordList).Fault(t.Exception);
         else filterWordList.Complete();
-      }
-      );
+      });
+
+      filterWordList.Completion.ContinueWith(t =>
+      {
+        if (t.IsFaulted) ((IDataflowBlock)findPalindromeWords).Fault(t.Exception);
+        else findPalindromeWords.Complete();
+      });
+
       // Process "The Adventurous Life of a Versatile Artist: Houdini" 
       //         by Harry Houdini.
       downloadString.Post("http://www.gutenberg.org/cache/epub/45370/pg45370.txt");
       downloadString.Complete();
 
-      filterWordList.Completion.Wait();
+      findPalindromeWords.Completion.Wait();
 
-      Console.WriteLine("Press a key to exit:");
-      Console.ReadKey();
+      Console.WriteLine("Press a key to exit:");     
     }
   }
 }
