@@ -65,7 +65,20 @@ namespace Palindromes.ConsoleApp
           }
         );
 
+      // Step 3 - Remove short words, sort alphabetically and remove dupes.
+
+      var filterWordList = new TransformBlock<List<string>, List<string>>
+        (wordsList =>
+         {
+           Console.WriteLine("STEP 3 - Filtering word list...");
+           var filteredWordsList = wordsList.Where(word => word.Length > 3).OrderBy(word => word).Distinct().ToList();
+           Console.WriteLine($"STEP 3 - Filtered list down to {filteredWordsList.Count}...");
+           return filteredWordsList;
+         }
+        );
+
       downloadString.LinkTo(createWordList);
+      createWordList.LinkTo(filterWordList);
 
       downloadString.Completion.ContinueWith(t =>
       {
@@ -73,12 +86,18 @@ namespace Palindromes.ConsoleApp
         else createWordList.Complete();
       });
 
+      createWordList.Completion.ContinueWith(t =>
+      {
+        if (t.IsFaulted) ((IDataflowBlock)filterWordList).Fault(t.Exception);
+        else filterWordList.Complete();
+      }
+      );
       // Process "The Adventurous Life of a Versatile Artist: Houdini" 
       //         by Harry Houdini.
       downloadString.Post("http://www.gutenberg.org/cache/epub/45370/pg45370.txt");
       downloadString.Complete();
 
-      createWordList.Completion.Wait();
+      filterWordList.Completion.Wait();
 
       Console.WriteLine("Press a key to exit:");
       Console.ReadKey();
