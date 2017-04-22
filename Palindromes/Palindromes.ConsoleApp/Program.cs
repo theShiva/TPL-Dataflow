@@ -84,7 +84,7 @@ namespace Palindromes.ConsoleApp
         ( wordsList =>
           {
             Console.WriteLine("STEP 4 - Finding Palindrome words...");
-
+            
             // Holds palindrome words.
             var palindromeWords = new ConcurrentQueue<string>();
 
@@ -105,14 +105,20 @@ namespace Palindromes.ConsoleApp
             Console.WriteLine(searchMessage);
 
             return palindromeWords;
-
           });
 
-
+      // Step 5 - Print Palindromes.
+      var printPalindromes = new ActionBlock<string>
+        ( palindrome =>
+          {
+            Console.WriteLine($"STEP 5 - Found palindrome: {palindrome} / {new string(palindrome.Reverse().ToArray())}");
+          }
+        );
 
       downloadString.LinkTo(createWordList);
       createWordList.LinkTo(filterWordList);
       filterWordList.LinkTo(findPalindromeWords);
+      findPalindromeWords.LinkTo(printPalindromes);
 
       downloadString.Completion.ContinueWith(t =>
       {
@@ -132,14 +138,26 @@ namespace Palindromes.ConsoleApp
         else findPalindromeWords.Complete();
       });
 
+      findPalindromeWords.Completion.ContinueWith(t =>
+      {
+        if (t.IsFaulted) ((IDataflowBlock)printPalindromes).Fault(t.Exception);
+        else printPalindromes.Complete();
+      });
+
       // Process "The Adventurous Life of a Versatile Artist: Houdini" 
       //         by Harry Houdini.
-      downloadString.Post("http://www.gutenberg.org/cache/epub/45370/pg45370.txt");
+      downloadString.Post("http://www.gutenberg.org/files/6130/6130-0.txt");
+
+      // Mark the head of the pipeline as complete. The continuation tasks 
+      // propagate completion through the pipeline as each part of the 
+      // pipeline finishes.
       downloadString.Complete();
 
-      findPalindromeWords.Completion.Wait();
+      // Wait for the last block in the pipeline to process all messages.
+      printPalindromes.Completion.Wait();
 
-      Console.WriteLine("Press a key to exit:");     
+      Console.WriteLine("Press a key to exit:");
+      Console.ReadKey();
     }
   }
 }
